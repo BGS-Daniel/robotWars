@@ -11,7 +11,7 @@ namespace RobotWars.Networking
         public static Bootstrapper Instance { get; private set; }
 
         [SerializeField] private string presetProfile;
-        [Tooltip("Auto-assign a unique identity per running process (required for host + join on the same PC). Disable to share a fixed device identity.")]
+        [Tooltip("Unique identity per process (required for host + join on the same PC).")]
         [SerializeField] private bool autoUniqueProfile = true;
 
         public bool Initialized { get; private set; }
@@ -33,8 +33,7 @@ namespace RobotWars.Networking
             }
             Instance = this;
 
-            // Give each running instance its own identity so two instances on the
-            // same PC (host + client) are seen as different players by Lobby/Relay.
+            // Unique identity per process so two instances on the same PC are distinct players.
             if (autoUniqueProfile && string.IsNullOrEmpty(presetProfile))
                 presetProfile = "local-" + Process.GetCurrentProcess().Id;
         }

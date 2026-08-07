@@ -30,8 +30,7 @@ namespace RobotWars.Networking
         private List<Lobby> _cachedPublicLobbies = new List<Lobby>();
         public List<Lobby> CachedPublicLobbies => _cachedPublicLobbies;
 
-        // clientId (NGO transport) -> Authentication playerId, used on the host to
-        // identify and remove a lobby member whose network connection dropped.
+        // NGO clientId -> Authentication playerId, so the host can remove a member who disconnected.
         private readonly Dictionary<ulong, string> _clientPlayerIds = new Dictionary<ulong, string>();
 
         public void RegisterPlayerId(ulong clientId, string playerId)

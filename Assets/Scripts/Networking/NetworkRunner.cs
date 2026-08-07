@@ -57,8 +57,8 @@ namespace RobotWars.Networking
             var nm = NetworkManager.Singleton;
             if (nm == null) return false;
 
-            // Approval must be enabled on BOTH sides for ConnectionData to be sent
-            // to the host. The host reads it to learn this client's auth playerId.
+            // Approval must be enabled on both sides for ConnectionData to reach
+            // the host, which reads it to learn this client's auth playerId.
             nm.NetworkConfig.ConnectionApproval = true;
 
             string playerId = AuthenticationService.Instance != null &&
@@ -93,8 +93,7 @@ namespace RobotWars.Networking
         private void OnClientDisconnect(ulong clientId)
         {
             var nm = NetworkManager.Singleton;
-            // On a non-server this is the loss of the host; on the host it is a
-            // client dropping. (Also raised during shutdown, which callers guard.)
+            // On a non-server this is the loss of the host; on the host, a client dropping.
             if (nm != null && nm.IsServer)
                 ClientDisconnected?.Invoke(clientId);
             else

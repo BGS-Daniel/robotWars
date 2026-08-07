@@ -75,10 +75,10 @@ namespace RobotWars.Networking
 
         private bool OnWantsToQuit()
         {
-            if (_quitConfirmed) return true;      // allow the real quit
-            _intentionalLeave = true;             // suppress the "host left" UI path
+            if (_quitConfirmed) return true; // allow the real quit
+            _intentionalLeave = true; // suppress the "host left" UI path
             StartCoroutine(QuitAfterCleanup());
-            return false;                         // cancel this first quit
+            return false; // cancel this first quit
         }
 
         private System.Collections.IEnumerator QuitAfterCleanup()
@@ -87,13 +87,11 @@ namespace RobotWars.Networking
             {
                 if (LobbyManager.Instance.IsHost)
                 {
-                    // Fire the host's lobby deletion (StopSync + DeleteLobbyAsync).
-                    LobbyManager.Instance.LeaveLobby();
+                    LobbyManager.Instance.LeaveLobby(); // deletes the lobby
                 }
                 else
                 {
-                    // Wait up to ~5s for the remote RemovePlayerAsync to complete so the
-                    // host no longer lists us. Yielding lets UnityWebRequest finish.
+                    // Wait ~5s for the remote RemovePlayerAsync so the host no longer lists us.
                     var task = LobbyManager.Instance.RemoveSelfAsync();
                     float waited = 0f;
                     while (!task.IsCompleted && waited < 5f)
@@ -262,9 +260,7 @@ namespace RobotWars.Networking
                 return;
             }
 
-            // Guard: you can't join a lobby you are already in (e.g. the host
-            // clicking their own row in the list). Joining your own lobby is what
-            // produces "player is already a member of the lobby".
+            // Can't join a lobby you are already in (e.g. the host clicking their own row).
             if (LobbyManager.Instance != null && LobbyManager.Instance.InLobby &&
                 LobbyManager.Instance.LobbyCode != null &&
                 string.Equals(LobbyManager.Instance.LobbyCode, code.ToUpper(), System.StringComparison.OrdinalIgnoreCase))
