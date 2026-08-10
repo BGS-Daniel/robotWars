@@ -12,6 +12,7 @@ namespace RobotWars.Networking
         [SerializeField] private float outwardSpeed = 5f;
         [SerializeField] private float upwardSpeed = 2f;
         [SerializeField] private float reHitCooldown = 0.75f;
+        [SerializeField] private float damagePerHit = 14f;
 
         private float _cooldownTimer;
 
@@ -46,7 +47,15 @@ namespace RobotWars.Networking
 
             var drive = rb.GetComponent<RobotDrive>();
             if (drive != null)
+            {
+                var meter = rb.GetComponent<ChargeMeter>();
+                if (meter != null)
+                {
+                    meter.AddCharge(damagePerHit);
+                    impulse *= meter.KnockbackMultiplier;
+                }
                 drive.ApplyKnockback(impulse, contactPoint);
+            }
             else
                 rb.AddForceAtPosition(impulse, contactPoint, ForceMode.Impulse);
         }

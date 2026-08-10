@@ -37,6 +37,8 @@ namespace RobotWars.Networking
             rb.angularVelocity = Vector3.zero;
             rb.position = position;
             Physics.SyncTransforms();
+
+            GetComponent<ChargeMeter>()?.ResetCharge();
         }
     }
 }

@@ -578,6 +578,7 @@ MonoBehaviour:
   spinSpeed: 960
   outwardSpeed: 3
   upwardSpeed: 6
+  damagePerHit: 8
 --- !u!1 &4241588435082655308
 GameObject:
   m_ObjectHideFlags: 0
@@ -796,6 +797,7 @@ GameObject:
   - component: {fileID: 8859663112664231223}
   - component: {fileID: 2497931033648794573}
   - component: {fileID: -4298257205893545767}
+  - component: {fileID: 8802095835832820815}
   m_Layer: 0
   m_Name: NetworkPlayer
   m_TagString: Untagged
@@ -986,8 +988,6 @@ MonoBehaviour:
   maxAngularSpeed: 200
   driveSmoothing: 16
   driveAcceleration: 45
-  spawnSpacing: 2.5
-  spawnY: 0.1
 --- !u!114 &-4298257205893545767
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1006,6 +1006,21 @@ MonoBehaviour:
   - {fileID: 1654979944773516925}
   - {fileID: 695380301071837390}
   - {fileID: 1479105719916431320}
+--- !u!114 &8802095835832820815
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5599903519056336609}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77c5bcada9f2f454d965734977f31b89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RobotWars.Networking.ChargeMeter
+  ShowTopMostFoldoutHeaderGroup: 1
+  maxCharge: 200
+  knockbackScale: 0.015
 --- !u!1 &6377263138756227686
 GameObject:
   m_ObjectHideFlags: 0

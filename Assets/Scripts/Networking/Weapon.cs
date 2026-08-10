@@ -9,6 +9,7 @@ namespace RobotWars.Networking
         [SerializeField] private float spinSpeed = 240f;   // deg/s
         [SerializeField] private float outwardSpeed = 3f;
         [SerializeField] private float upwardSpeed = 6f;
+        [SerializeField] private float damagePerHit = 8f;
 
         private void Update()
         {
@@ -40,7 +41,17 @@ namespace RobotWars.Networking
 
             var drive = rb.GetComponent<RobotDrive>();
             if (drive != null)
+            {
+                // Charge the victim before applying knockback, so the hit that
+                // lands also contributes to how far it is flung.
+                var meter = rb.GetComponent<ChargeMeter>();
+                if (meter != null)
+                {
+                    meter.AddCharge(damagePerHit);
+                    impulse *= meter.KnockbackMultiplier;
+                }
                 drive.ApplyKnockback(impulse, contactPoint);
+            }
             else
                 rb.AddForceAtPosition(impulse, contactPoint, ForceMode.Impulse);
         }
