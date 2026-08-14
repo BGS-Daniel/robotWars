@@ -8,11 +8,15 @@ namespace RobotWars.Networking
     {
         [SerializeField] private Transform pivot;
         [SerializeField] private float spinSpeed = 240f;   // deg/s
-        [SerializeField] private float outwardSpeed = 3f;
-        [SerializeField] private float upwardSpeed = 6f;
-        [SerializeField] private float damagePerHit = 8f;
+        [SerializeField] private ImpactSource impactSource;
 
-        [SerializeField] private float gaugeGainMultiplier = 0.5f;
+        private Rigidbody _body;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            _body = GetComponentInParent<Rigidbody>();
+        }
 
         private void Update()
         {
@@ -25,41 +29,32 @@ namespace RobotWars.Networking
         private void OnTriggerEnter(Collider other)
         {
             if (!IsServer) return;
+            if (impactSource == null) return;
             var rb = other.attachedRigidbody;
             if (rb == null) return; // walls, floor, props without a rigidbody
             if (rb == GetComponentInParent<Rigidbody>()) return; // don't hit ourselves
             if (pivot == null) return;
 
-            // Impulse at the contact point (not center of mass) imparts torque,
-            // so the victim spins/tumbles from the hit instead of just sliding.
+            var health = rb.GetComponent<RoombaHealth>();
+            if (health == null) return;
+
             Vector3 contactPoint = other.ClosestPoint(pivot.position);
 
-            Vector3 away = rb.position - pivot.position;
-            away.y = 0f;
-            if (away.sqrMagnitude < 0.0001f) away = pivot.forward;
-            away.Normalize();
+            Vector3 attackerVel = CombatResolver.BodyPointVelocity(_body, contactPoint);
+            // Outer edge of the spinning blade produces a strong impact even when
+            // the Roomba itself is stationary.
+            attackerVel += CombatResolver.SpinPointVelocity(pivot, pivot.right,
+                -spinSpeed * Mathf.Deg2Rad, contactPoint);
 
-            // Scale by mass so launch speed is the same regardless of robot weight.
-            Vector3 impulse = (away * outwardSpeed + Vector3.up * upwardSpeed) * rb.mass;
-
-            var drive = rb.GetComponent<RobotDrive>();
-            if (drive != null)
+            CombatResolver.Resolve(new ImpactRequest
             {
-                // Charge the victim before applying knockback, so the hit that
-                // lands also contributes to how far it is flung.
-                var health = rb.GetComponent<RoombaHealth>();
-                if (health != null)
-                {
-                    float gain = damagePerHit * gaugeGainMultiplier;
-                    if (health.Settings != null)
-                        gain = damagePerHit * health.Settings.gaugeGainMultiplier;
-                    health.ApplyDamage(damagePerHit, gain);
-                    impulse *= health.EvaluateGaugeMultiplier();
-                }
-                drive.ApplyKnockback(impulse, contactPoint);
-            }
-            else
-                rb.AddForceAtPosition(impulse, contactPoint, ForceMode.Impulse);
+                source = impactSource,
+                attacker = gameObject,
+                targetBody = rb,
+                targetHealth = health,
+                contactPoint = contactPoint,
+                attackerVelocityAtContact = attackerVel
+            });
         }
     }
 }

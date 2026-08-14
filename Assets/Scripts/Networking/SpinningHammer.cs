@@ -9,15 +9,7 @@ namespace RobotWars.Networking
         [SerializeField] private Transform arm;
         [SerializeField] private float spinSpeed = 90f;
         [SerializeField] private float direction = 1f; // +1 CCW from above, -1 CW
-
-        [SerializeField] private float outwardSpeed = 5f;
-        [SerializeField] private float upwardSpeed = 2f;
-        [SerializeField] private float reHitCooldown = 0.75f;
-        [SerializeField] private float damagePerHit = 14f;
-
-        [SerializeField] private float gaugeGainMultiplier = 0.5f;
-
-        private float _cooldownTimer;
+        [SerializeField] private ImpactSource impactSource;
 
         private void Update()
         {
@@ -25,45 +17,32 @@ namespace RobotWars.Networking
                 arm.Rotate(0f, direction * spinSpeed * Time.deltaTime, 0f, Space.World);
         }
 
-        private void FixedUpdate()
-        {
-            if (_cooldownTimer > 0f) _cooldownTimer -= Time.fixedDeltaTime;
-        }
-
         private void OnTriggerEnter(Collider other)
         {
-            if (_cooldownTimer > 0f) return;
-            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return; // host computes hits
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
+            if (impactSource == null) return;
             var rb = other.attachedRigidbody;
             if (rb == null) return; // walls, floor, props without a rigidbody
 
-            _cooldownTimer = reHitCooldown;
+            var health = rb.GetComponent<RoombaHealth>();
+            if (health == null) return;
 
             Vector3 contactPoint = other.ClosestPoint(transform.position);
 
-            Vector3 away = rb.position - transform.position;
-            away.y = 0f;
-            if (away.sqrMagnitude < 0.0001f) away = transform.forward;
-            away.Normalize();
+            // The arm spins around world Y; its tip carries the impact even when
+            // the hazard body itself is static.
+            Vector3 attackerVel = CombatResolver.SpinPointVelocity(arm, Vector3.up,
+                direction * spinSpeed * Mathf.Deg2Rad, contactPoint);
 
-            Vector3 impulse = (away * outwardSpeed + Vector3.up * upwardSpeed) * rb.mass;
-
-            var drive = rb.GetComponent<RobotDrive>();
-            if (drive != null)
+            CombatResolver.Resolve(new ImpactRequest
             {
-                var health = rb.GetComponent<RoombaHealth>();
-                if (health != null)
-                {
-                    float gain = damagePerHit * gaugeGainMultiplier;
-                    if (health.Settings != null)
-                        gain = damagePerHit * health.Settings.gaugeGainMultiplier;
-                    health.ApplyDamage(damagePerHit, gain);
-                    impulse *= health.EvaluateGaugeMultiplier();
-                }
-                drive.ApplyKnockback(impulse, contactPoint);
-            }
-            else
-                rb.AddForceAtPosition(impulse, contactPoint, ForceMode.Impulse);
+                source = impactSource,
+                attacker = gameObject,
+                targetBody = rb,
+                targetHealth = health,
+                contactPoint = contactPoint,
+                attackerVelocityAtContact = attackerVel
+            });
         }
     }
 }

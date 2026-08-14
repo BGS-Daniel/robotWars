@@ -2088,12 +2088,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotWars.Networking.SpinningHammer
   arm: {fileID: 6544909}
   spinSpeed: 480
-  direction: 1
-  outwardSpeed: 10
-  upwardSpeed: 5
-  reHitCooldown: 0.1
-  damagePerHit: 14
-  gaugeGainMultiplier: 0.5
+  impactSource: {fileID: 11400000, guid: b4880a9b81f75be46822a8321e4a5301, type: 2}
 --- !u!23 &394663197
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3261,11 +3256,7 @@ MonoBehaviour:
   arm: {fileID: 1441289054}
   spinSpeed: 480
   direction: -1
-  outwardSpeed: 10
-  upwardSpeed: 5
-  reHitCooldown: 0.1
-  damagePerHit: 14
-  gaugeGainMultiplier: 0.5
+  impactSource: {fileID: 11400000, guid: b4880a9b81f75be46822a8321e4a5301, type: 2}
 --- !u!23 &595524764
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -6655,11 +6646,7 @@ MonoBehaviour:
   arm: {fileID: 95883230}
   spinSpeed: 480
   direction: -1
-  outwardSpeed: 10
-  upwardSpeed: 5
-  reHitCooldown: 0.1
-  damagePerHit: 14
-  gaugeGainMultiplier: 0.5
+  impactSource: {fileID: 11400000, guid: b4880a9b81f75be46822a8321e4a5301, type: 2}
 --- !u!23 &1485862232
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -8085,12 +8072,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotWars.Networking.SpinningHammer
   arm: {fileID: 138402801}
   spinSpeed: 480
-  direction: 1
-  outwardSpeed: 10
-  upwardSpeed: 5
-  reHitCooldown: 0.1
-  damagePerHit: 14
-  gaugeGainMultiplier: 0.5
+  impactSource: {fileID: 11400000, guid: b4880a9b81f75be46822a8321e4a5301, type: 2}
 --- !u!23 &1804500341
 MeshRenderer:
   m_ObjectHideFlags: 0

@@ -632,10 +632,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   pivot: {fileID: 6708102241601484785}
   spinSpeed: 960
-  outwardSpeed: 3
-  upwardSpeed: 6
-  damagePerHit: 8
-  gaugeGainMultiplier: 0.5
+  impactSource: {fileID: 11400000, guid: 94c0173ec12a02a428d5c3c2939d55b2, type: 2}
 --- !u!1 &4277699589924748073
 GameObject:
   m_ObjectHideFlags: 0
@@ -743,6 +740,7 @@ GameObject:
   - component: {fileID: 2497931033648794573}
   - component: {fileID: -4298257205893545767}
   - component: {fileID: 4471897774561060906}
+  - component: {fileID: 8787982961304754030}
   m_Layer: 0
   m_Name: NetworkPlayer
   m_TagString: Untagged
@@ -964,6 +962,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotWars.Combat.RoombaHealth
   ShowTopMostFoldoutHeaderGroup: 1
   settings: {fileID: 11400000, guid: 41e2d580245bb1445a6421ed383a9359, type: 2}
+--- !u!114 &8787982961304754030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5599903519056336609}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51c411f9add0767478c2f349e7fae437, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RobotWars.Networking.RoombaRam
+  ShowTopMostFoldoutHeaderGroup: 1
+  ramSource: {fileID: 11400000, guid: cc7e7c67cac1c9845be786b255dc91fe, type: 2}
 --- !u!1 &5677569534585445554
 GameObject:
   m_ObjectHideFlags: 0
