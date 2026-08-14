@@ -26,7 +26,16 @@ namespace RobotWars.Combat
 
         [Header("Impact")]
         [Tooltip("Reference Impact Strength that yields an Impact Multiplier of 1.")]
-        public float referenceImpactStrength = 10f;
+        public float referenceImpactStrength = 30f;
+
+        [Tooltip("Floor for the Impact Multiplier (keeps weak hits from dealing zero damage).")]
+        public float minImpactMultiplier = 0.2f;
+
+        [Tooltip("Ceiling for the Impact Multiplier (prevents a strong hit from one-shotting).")]
+        public float maxImpactMultiplier = 2.5f;
+
+        [Tooltip("Fraction of the knockback impulse applied upward, so hits launch the Roomba off the ground.")]
+        public float knockbackUpwardRatio = 0.5f;
 
         [Header("Ring Out")]
         [Tooltip("Kill plane height; a Roomba below this Y is eliminated as Ring Out.")]
@@ -54,6 +63,11 @@ namespace RobotWars.Combat
         public float ClampGauge(float value)
         {
             return Mathf.Clamp(value, 0f, gaugeMax);
+        }
+
+        public float ClampImpactMultiplier(float value)
+        {
+            return Mathf.Clamp(value, minImpactMultiplier, maxImpactMultiplier);
         }
     }
 }

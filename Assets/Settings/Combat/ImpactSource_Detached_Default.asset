@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotWars.Combat.ImpactSource
   minImpactSpeed: 3
   impactCooldown: 0.5
-  baseDamage: 5
-  baseKnockback: 3
-  baseGaugeIncrease: 0.4
+  baseDamage: 4
+  baseKnockback: 4
+  baseGaugeIncrease: 0.6
   damageMultiplier: 1
   knockbackMultiplier: 1
   impactMass: 1

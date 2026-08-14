@@ -34,6 +34,9 @@ namespace RobotWars.Networking
         private float _rightWheelSpeed;
         private readonly Collider[] _overlapBuffer = new Collider[16];
 
+        // True while the body is being flung by a hit (drive is suppressed).
+        public bool IsInKnockback => _knockbackTimer > 0f;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

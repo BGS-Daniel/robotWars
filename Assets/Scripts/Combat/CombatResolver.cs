@@ -1,9 +1,31 @@
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Netcode;
 using UnityEngine;
 
 namespace RobotWars.Combat
 {
+    // Reference-equality for GameObjects so dictionary keys survive instance ID reuse.
+    internal class GameObjectPairComparer : IEqualityComparer<(GameObject, GameObject)>
+    {
+        public static readonly GameObjectPairComparer Instance = new GameObjectPairComparer();
+
+        public bool Equals((GameObject, GameObject) a, (GameObject, GameObject) b)
+        {
+            return ReferenceEquals(a.Item1, b.Item1) && ReferenceEquals(a.Item2, b.Item2);
+        }
+
+        public int GetHashCode((GameObject, GameObject) pair)
+        {
+            unchecked
+            {
+                int h1 = RuntimeHelpers.GetHashCode(pair.Item1);
+                int h2 = RuntimeHelpers.GetHashCode(pair.Item2);
+                return (h1 * 397) ^ h2;
+            }
+        }
+    }
+
     public struct ImpactRequest
     {
         public ImpactSource source;
@@ -30,7 +52,8 @@ namespace RobotWars.Combat
     {
         // Impact Cooldown per source-target pair so a resting weapon can't deal
         // damage every physics frame.
-        private static readonly Dictionary<(int, int), float> _lastHitTimes = new Dictionary<(int, int), float>();
+        private static readonly Dictionary<(GameObject, GameObject), float> _lastHitTimes =
+            new Dictionary<(GameObject, GameObject), float>(GameObjectPairComparer.Instance);
 
         // Attacker velocity at a point: body motion plus optional spin velocity.
         public static Vector3 BodyPointVelocity(Rigidbody body, Vector3 contactPoint)
@@ -66,8 +89,10 @@ namespace RobotWars.Combat
             float impactStrength = request.source.ComputeImpactStrength(relativeSpeed);
             float reference = request.targetHealth.Settings != null
                 ? request.targetHealth.Settings.referenceImpactStrength
-                : 10f;
+                : 30f;
             float impactMultiplier = reference > 0f ? impactStrength / reference : 1f;
+            if (request.targetHealth.Settings != null)
+                impactMultiplier = request.targetHealth.Settings.ClampImpactMultiplier(impactMultiplier);
 
             float finalDamage = request.source.baseDamage * impactMultiplier * request.source.damageMultiplier;
 
@@ -93,6 +118,7 @@ namespace RobotWars.Combat
 
             RegisterHit(request);
             ApplyKnockback(request, result);
+            request.targetHealth.NotifyImpactFx(request.contactPoint);
 
             return result;
         }
@@ -110,7 +136,14 @@ namespace RobotWars.Combat
         private static void ApplyKnockback(ImpactRequest request, ImpactResult result)
         {
             if (result.finalKnockback <= 0f) return;
+
+            // Horizontal push from the impact direction, plus an upward fraction
+            // so the Roomba lifts off the ground even at low gauge.
             Vector3 impulse = result.impactDirection * result.finalKnockback * request.targetBody.mass;
+            float upward = request.targetHealth.Settings != null
+                ? request.targetHealth.Settings.knockbackUpwardRatio
+                : 0.5f;
+            impulse.y += result.finalKnockback * upward * request.targetBody.mass;
 
             var drive = request.targetBody.GetComponent<RobotWars.Networking.RobotDrive>();
             if (drive != null)
@@ -122,7 +155,7 @@ namespace RobotWars.Combat
         private static bool IsCooldownReady(ImpactRequest request)
         {
             if (request.attacker == null || request.targetHealth == null) return true;
-            if (!_lastHitTimes.TryGetValue((request.attacker.GetInstanceID(), request.targetHealth.GetInstanceID()), out float last))
+            if (!_lastHitTimes.TryGetValue((request.attacker, request.targetHealth.gameObject), out float last))
                 return true;
             return Time.time - last >= request.source.impactCooldown;
         }
@@ -130,7 +163,7 @@ namespace RobotWars.Combat
         private static void RegisterHit(ImpactRequest request)
         {
             if (request.attacker == null || request.targetHealth == null) return;
-            _lastHitTimes[(request.attacker.GetInstanceID(), request.targetHealth.GetInstanceID())] = Time.time;
+            _lastHitTimes[(request.attacker, request.targetHealth.gameObject)] = Time.time;
         }
     }
 }

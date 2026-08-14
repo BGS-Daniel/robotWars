@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotWars.Combat.CombatSettings
   maxHP: 100
   gaugeMax: 100
-  gaugeGainMultiplier: 0.5
+  gaugeGainMultiplier: 0.75
   gaugeKnockbackCurve:
     serializedVersion: 2
     m_Curve:
@@ -66,7 +66,10 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  referenceImpactStrength: 10
+  referenceImpactStrength: 30
+  minImpactMultiplier: 0.2
+  maxImpactMultiplier: 2.5
+  knockbackUpwardRatio: 0.001
   killPlaneY: -4
   arenaHalfExtents: {x: 26, y: 26}
   minWallImpactSpeed: 8
