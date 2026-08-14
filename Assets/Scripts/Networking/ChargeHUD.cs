@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using Unity.Netcode;
+using RobotWars.Combat;
 
 namespace RobotWars.Networking
 {
@@ -8,26 +9,27 @@ namespace RobotWars.Networking
     {
         [SerializeField] private TextMeshProUGUI label;
 
-        private ChargeMeter _localMeter;
+        private RoombaHealth _localHealth;
 
         private void Update()
         {
-            if (_localMeter == null)
-                FindLocalMeter();
+            if (_localHealth == null)
+                FindLocalHealth();
 
             if (label != null)
-                label.text = _localMeter != null
-                    ? "CHARGE " + Mathf.RoundToInt(_localMeter.Charge)
+                label.text = _localHealth != null
+                    ? "HP " + Mathf.RoundToInt(_localHealth.CurrentHP) + "/" + Mathf.RoundToInt(_localHealth.MaxHP) +
+                      "  GAUGE " + Mathf.RoundToInt(_localHealth.Gauge)
                     : "";
         }
 
-        private void FindLocalMeter()
+        private void FindLocalHealth()
         {
             var nm = NetworkManager.Singleton;
             if (nm == null || nm.LocalClient == null) return;
             var po = nm.LocalClient.PlayerObject;
             if (po != null)
-                _localMeter = po.GetComponent<ChargeMeter>();
+                _localHealth = po.GetComponent<RoombaHealth>();
         }
     }
 }

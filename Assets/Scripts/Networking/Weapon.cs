@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using RobotWars.Combat;
 
 namespace RobotWars.Networking
 {
@@ -10,6 +11,8 @@ namespace RobotWars.Networking
         [SerializeField] private float outwardSpeed = 3f;
         [SerializeField] private float upwardSpeed = 6f;
         [SerializeField] private float damagePerHit = 8f;
+
+        [SerializeField] private float gaugeGainMultiplier = 0.5f;
 
         private void Update()
         {
@@ -44,11 +47,14 @@ namespace RobotWars.Networking
             {
                 // Charge the victim before applying knockback, so the hit that
                 // lands also contributes to how far it is flung.
-                var meter = rb.GetComponent<ChargeMeter>();
-                if (meter != null)
+                var health = rb.GetComponent<RoombaHealth>();
+                if (health != null)
                 {
-                    meter.AddCharge(damagePerHit);
-                    impulse *= meter.KnockbackMultiplier;
+                    float gain = damagePerHit * gaugeGainMultiplier;
+                    if (health.Settings != null)
+                        gain = damagePerHit * health.Settings.gaugeGainMultiplier;
+                    health.ApplyDamage(damagePerHit, gain);
+                    impulse *= health.EvaluateGaugeMultiplier();
                 }
                 drive.ApplyKnockback(impulse, contactPoint);
             }

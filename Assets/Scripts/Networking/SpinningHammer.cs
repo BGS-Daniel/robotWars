@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using RobotWars.Combat;
 
 namespace RobotWars.Networking
 {
@@ -13,6 +14,8 @@ namespace RobotWars.Networking
         [SerializeField] private float upwardSpeed = 2f;
         [SerializeField] private float reHitCooldown = 0.75f;
         [SerializeField] private float damagePerHit = 14f;
+
+        [SerializeField] private float gaugeGainMultiplier = 0.5f;
 
         private float _cooldownTimer;
 
@@ -48,11 +51,14 @@ namespace RobotWars.Networking
             var drive = rb.GetComponent<RobotDrive>();
             if (drive != null)
             {
-                var meter = rb.GetComponent<ChargeMeter>();
-                if (meter != null)
+                var health = rb.GetComponent<RoombaHealth>();
+                if (health != null)
                 {
-                    meter.AddCharge(damagePerHit);
-                    impulse *= meter.KnockbackMultiplier;
+                    float gain = damagePerHit * gaugeGainMultiplier;
+                    if (health.Settings != null)
+                        gain = damagePerHit * health.Settings.gaugeGainMultiplier;
+                    health.ApplyDamage(damagePerHit, gain);
+                    impulse *= health.EvaluateGaugeMultiplier();
                 }
                 drive.ApplyKnockback(impulse, contactPoint);
             }

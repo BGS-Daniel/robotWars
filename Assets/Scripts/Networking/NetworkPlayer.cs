@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using RobotWars.Combat;
 
 namespace RobotWars.Networking
 {
@@ -38,7 +39,7 @@ namespace RobotWars.Networking
             rb.position = position;
             Physics.SyncTransforms();
 
-            GetComponent<ChargeMeter>()?.ResetCharge();
+            GetComponent<RoombaHealth>()?.ResetForRound();
         }
     }
 }

@@ -2093,6 +2093,7 @@ MonoBehaviour:
   upwardSpeed: 5
   reHitCooldown: 0.1
   damagePerHit: 14
+  gaugeGainMultiplier: 0.5
 --- !u!23 &394663197
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3264,6 +3265,7 @@ MonoBehaviour:
   upwardSpeed: 5
   reHitCooldown: 0.1
   damagePerHit: 14
+  gaugeGainMultiplier: 0.5
 --- !u!23 &595524764
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4106,13 +4108,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 848245170}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.057486888, y: 0.4052672, z: -0.128139, w: 0.9033461}
-  m_LocalPosition: {x: 4.83, y: -0.09, z: -2.23}
+  m_LocalRotation: {x: -0.03353957, y: 0.40794948, z: -0.074759774, w: 0.90932024}
+  m_LocalPosition: {x: 4.83, y: -0.5, z: -2.23}
   m_LocalScale: {x: 6.6652, y: 2, z: 5.66}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1158293570}
-  m_LocalEulerAnglesHint: {x: 0, y: 48.325, z: -16.147}
+  m_LocalEulerAnglesHint: {x: 0, y: 48.325, z: -9.4}
 --- !u!23 &848245172
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -6657,6 +6659,7 @@ MonoBehaviour:
   upwardSpeed: 5
   reHitCooldown: 0.1
   damagePerHit: 14
+  gaugeGainMultiplier: 0.5
 --- !u!23 &1485862232
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -8087,6 +8090,7 @@ MonoBehaviour:
   upwardSpeed: 5
   reHitCooldown: 0.1
   damagePerHit: 14
+  gaugeGainMultiplier: 0.5
 --- !u!23 &1804500341
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -8540,13 +8544,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1872518257}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.128139, y: -0.9033461, z: -0.057486888, w: 0.4052672}
-  m_LocalPosition: {x: -1.3190768, y: -0.09, z: 4.7392564}
+  m_LocalRotation: {x: 0.074759774, y: -0.90932024, z: -0.03353958, w: 0.40794957}
+  m_LocalPosition: {x: -1.3190768, y: -0.5, z: 4.7392564}
   m_LocalScale: {x: 6.6652, y: 2, z: 5.66}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1158293570}
-  m_LocalEulerAnglesHint: {x: 0, y: -131.675, z: -16.147}
+  m_LocalEulerAnglesHint: {x: 0, y: -131.675, z: -9.4}
 --- !u!23 &1872518259
 MeshRenderer:
   m_ObjectHideFlags: 0
