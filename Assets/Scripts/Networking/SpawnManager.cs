@@ -11,7 +11,9 @@ namespace RobotWars.Networking
 
         [SerializeField] private float spawnHeight = 0.1f;
 
-        private const string GameSceneName = "SampleScene";
+        [Tooltip("Arena scene names that trigger placement via the load event fallback.")]
+        [SerializeField] private string[] arenaSceneNames = new string[] { "SampleScene", "Arena2" };
+
         private int _placementFrames;
         private bool _awaitingArena;
         private bool _hasPlaced;
@@ -54,7 +56,7 @@ namespace RobotWars.Networking
         private void OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode,
             List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
         {
-            if (sceneName != GameSceneName) return;
+            if (System.Array.IndexOf(arenaSceneNames, sceneName) < 0) return;
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
             if (_hasPlaced) return;
 
@@ -81,6 +83,18 @@ namespace RobotWars.Networking
                 if (networkPlayer != null)
                     networkPlayer.PlaceInArena(position);
             }
+
+            // The map is loaded and players are placed: let MatchManager start
+            // the countdown now (map first, then spawn/round).
+            if (MatchManager.Instance != null)
+                MatchManager.Instance.NotifyPlayersPlaced();
+        }
+
+        /// Server-only: re-place every player at its spawn point for a fresh round.
+        public void ReplaceAllPlayers()
+        {
+            _hasPlaced = false;
+            PlaceAllPlayers();
         }
     }
 }

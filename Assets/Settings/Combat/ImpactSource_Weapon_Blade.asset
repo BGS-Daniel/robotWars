@@ -20,5 +20,6 @@ MonoBehaviour:
   damageMultiplier: 1
   knockbackMultiplier: 1
   impactMass: 1
+  knockbackUpwardRatio: 1.5
   machineryPowerMultiplier: 1.5
   IsActive: 1

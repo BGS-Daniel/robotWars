@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -19,7 +18,6 @@ namespace RobotWars.Combat
         [SerializeField] private CombatSettings settings;
         [SerializeField] private RobotWars.Networking.RoombaDebris debrisPrefab;
         [SerializeField] private GameObject impactBurstPrefab;
-        [SerializeField] private float respawnDelay = 5f;
 
         private readonly NetworkVariable<float> _currentHP = new NetworkVariable<float>(0f);
         private readonly NetworkVariable<float> _gauge = new NetworkVariable<float>(0f);
@@ -125,8 +123,6 @@ namespace RobotWars.Combat
             Eliminated?.Invoke(cause);
 
             SpawnDebris();
-            if (respawnDelay > 0f)
-                StartCoroutine(RespawnAfterDelay());
         }
 
         // Server-only: blow the Roomba apart into rigidbody debris that keeps
@@ -162,19 +158,6 @@ namespace RobotWars.Combat
                 debris.Launch(pointVel + outward * UnityEngine.Random.Range(4f, 8f) + Vector3.up * UnityEngine.Random.Range(1f, 3f),
                     UnityEngine.Random.onUnitSphere * UnityEngine.Random.Range(3f, 8f));
             }
-        }
-
-        private IEnumerator RespawnAfterDelay()
-        {
-            yield return new WaitForSeconds(respawnDelay);
-            if (!IsServer || !IsEliminated) yield break;
-
-            // Back to a spawn point, then full round reset (HP, gauge, body, controls).
-            var player = GetComponent<RobotWars.Networking.NetworkPlayer>();
-            if (player != null)
-                player.Respawn();
-            else
-                ResetForRound();
         }
 
         // Server-only: ask all clients to show the small impact puff.

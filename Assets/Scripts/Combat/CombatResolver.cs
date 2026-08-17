@@ -138,11 +138,15 @@ namespace RobotWars.Combat
             if (result.finalKnockback <= 0f) return;
 
             // Horizontal push from the impact direction, plus an upward fraction
-            // so the Roomba lifts off the ground even at low gauge.
+            // so the Roomba lifts off the ground even at low gauge. A source can
+            // override the global ratio (e.g. a blade that flings things up).
             Vector3 impulse = result.impactDirection * result.finalKnockback * request.targetBody.mass;
+
             float upward = request.targetHealth.Settings != null
                 ? request.targetHealth.Settings.knockbackUpwardRatio
                 : 0.5f;
+            if (request.source.knockbackUpwardRatio > 0f)
+                upward = request.source.knockbackUpwardRatio;
             impulse.y += result.finalKnockback * upward * request.targetBody.mass;
 
             var drive = request.targetBody.GetComponent<RobotWars.Networking.RobotDrive>();

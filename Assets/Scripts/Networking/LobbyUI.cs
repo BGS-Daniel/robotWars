@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Unity.Services.Authentication;
 
 namespace RobotWars.Networking
 {
@@ -28,6 +29,23 @@ namespace RobotWars.Networking
         [SerializeField] private TextMeshProUGUI playerListText;
         [SerializeField] private Button leaveButton;
         [SerializeField] private Button startButton;
+        [SerializeField] private GameObject matchManagerPrefab;
+
+        [Header("Colour / Ready")]
+        [Tooltip("One button per Roomba colour, in palette order.")]
+        [SerializeField] private Button[] colourButtons;
+        [Tooltip("Outline highlight shown on the currently selected colour, in palette order.")]
+        [SerializeField] private UnityEngine.UI.Outline[] colourButtonOutlines;
+        [SerializeField] private Button readyButton;
+        [SerializeField] private UnityEngine.UI.Image readyButtonImage;
+        [SerializeField] private TextMeshProUGUI readyButtonLabel;
+
+        [Tooltip("Ready button colours: [not ready, ready].")]
+        [SerializeField] private Color[] readyButtonColors =
+        {
+            new Color(0.2f, 0.45f, 0.8f, 1f),
+            new Color(0.2f, 0.8f, 0.3f, 1f)
+        };
 
         private const string GameSceneName = "SampleScene";
 
@@ -394,9 +412,50 @@ namespace RobotWars.Networking
             }
 
             SetStatus("Starting game...");
+
+            // Spawn the persistent match manager so rounds/wins survive scene loads.
+            if (MatchManager.Instance == null)
+                SpawnMatchManager();
+
             var status = nm.SceneManager.LoadScene(GameSceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
             if (status != Unity.Netcode.SceneEventProgressStatus.Started)
                 SetStatus("Could not start the game: " + status, true);
+        }
+
+        public async void OnColourPressed(int index)
+        {
+            if (LobbyManager.Instance == null || !LobbyManager.Instance.InLobby) return;
+            await LobbyManager.Instance.UpdateColorAsync(index);
+
+            // Re-apply the tint to this player's Roomba if it already exists.
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm != null && nm.LocalClient != null && nm.LocalClient.PlayerObject != null)
+            {
+                var tint = nm.LocalClient.PlayerObject.GetComponent<RobotWars.Networking.RoombaTint>();
+                if (tint != null)
+                    tint.ReportColor();
+            }
+
+            RenderFromLobby(LobbyManager.Instance.CurrentLobby);
+        }
+
+        public async void OnReadyPressed()
+        {
+            if (LobbyManager.Instance == null || !LobbyManager.Instance.InLobby) return;
+            bool newReady = !LocalPlayer.Ready;
+            await LobbyManager.Instance.UpdateReadyAsync(newReady);
+            RenderFromLobby(LobbyManager.Instance.CurrentLobby);
+        }
+
+        private void SpawnMatchManager()
+        {
+            if (matchManagerPrefab == null) return;
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null) return;
+            var go = UnityEngine.Object.Instantiate(matchManagerPrefab);
+            var netObj = go.GetComponent<Unity.Netcode.NetworkObject>();
+            if (netObj != null)
+                netObj.Spawn();
         }
 
         #endregion
@@ -409,6 +468,22 @@ namespace RobotWars.Networking
             if (lobbyPanel != null) lobbyPanel.SetActive(true);
             if (startButton != null)
                 startButton.gameObject.SetActive(LobbyManager.Instance != null && LobbyManager.Instance.IsHost);
+
+            if (colourButtons != null)
+                for (int i = 0; i < colourButtons.Length; i++)
+                {
+                    if (colourButtons[i] == null) continue;
+                    int index = i;
+                    colourButtons[i].onClick.RemoveAllListeners();
+                    colourButtons[i].onClick.AddListener(() => OnColourPressed(index));
+                }
+
+            if (readyButton != null)
+            {
+                readyButton.onClick.RemoveAllListeners();
+                readyButton.onClick.AddListener(OnReadyPressed);
+            }
+
             RenderFromLobby(LobbyManager.Instance.CurrentLobby);
         }
 
@@ -436,17 +511,90 @@ namespace RobotWars.Networking
             if (lobbyCodeText != null) lobbyCodeText.text = lobby.LobbyCode;
 
             var sb = new System.Text.StringBuilder();
+            int readyCount = 0;
             foreach (var p in lobby.Players)
             {
                 string name = p.Data != null && p.Data.TryGetValue("PlayerName", out var sn)
                     ? sn.Value
                     : (p.Id ?? "?");
                 bool host = lobby.HostId == p.Id;
+                string colour = p.Data != null && p.Data.TryGetValue("Color", out var sc)
+                    ? sc.Value
+                    : "0";
+                bool ready = p.Data != null && p.Data.TryGetValue("Ready", out var sr)
+                    && sr.Value == "1";
+                if (ready) readyCount++;
+
                 sb.Append(name);
+                sb.Append("  [" + ColourName(colour) + "]");
                 if (host) sb.Append("  (Host)");
+                if (ready) sb.Append("  [READY]");
+                else sb.Append("  [not ready]");
                 sb.Append("\n");
             }
             if (playerListText != null) playerListText.text = sb.ToString();
+
+            // Host can only start once everyone is ready.
+            bool allReady = lobby.Players.Count > 0 && readyCount == lobby.Players.Count;
+            bool isHost = LobbyManager.Instance != null && LobbyManager.Instance.IsHost;
+            if (startButton != null)
+            {
+                startButton.interactable = isHost && allReady;
+                var lbl = startButton.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                if (lbl != null)
+                    lbl.text = isHost && allReady ? "Start Game" : (isHost ? "Waiting for players..." : "");
+            }
+
+            if (readyButtonLabel != null)
+                readyButtonLabel.text = LocalPlayer.Ready ? "Ready!" : "Not Ready";
+            if (readyButtonImage != null)
+            {
+                int state = LocalPlayer.Ready ? 1 : 0;
+                if (readyButtonColors != null && state < readyButtonColors.Length)
+                    readyButtonImage.color = readyButtonColors[state];
+            }
+
+            UpdateColourButtons(lobby);
+        }
+
+        // Disable colour buttons already taken by OTHER players, and highlight
+        // the locally selected colour.
+        private void UpdateColourButtons(Unity.Services.Lobbies.Models.Lobby lobby)
+        {
+            if (colourButtons == null) return;
+
+            var taken = new System.Collections.Generic.HashSet<int>();
+            foreach (var p in lobby.Players)
+            {
+                if (p.Id == (AuthenticationService.Instance != null ? AuthenticationService.Instance.PlayerId : null))
+                    continue;
+                if (p.Data != null && p.Data.TryGetValue("Color", out var sc) &&
+                    int.TryParse(sc.Value, out int idx))
+                    taken.Add(idx);
+            }
+
+            for (int i = 0; i < colourButtons.Length; i++)
+            {
+                if (colourButtons[i] == null) continue;
+                colourButtons[i].interactable = !taken.Contains(i);
+
+                // Highlight the selected colour.
+                if (colourButtonOutlines != null && i < colourButtonOutlines.Length &&
+                    colourButtonOutlines[i] != null)
+                    colourButtonOutlines[i].enabled = i == LocalPlayer.ColorIndex;
+            }
+        }
+
+        private static string ColourName(string index)
+        {
+            switch (index)
+            {
+                case "0": return "Blue";
+                case "1": return "Red";
+                case "2": return "Green";
+                case "3": return "Yellow";
+                default: return "Blue";
+            }
         }
 
         private void SaveName()

@@ -143,6 +143,9 @@ namespace RobotWars.Networking
             // Kinematic bodies (frozen in lobby / client copies) reject velocity writes.
             if (_rb != null && _rb.isKinematic) return;
 
+            // No control until the round countdown ends.
+            if (MatchManager.Instance != null && !MatchManager.Instance.IsRoundActive) return;
+
             if (_knockbackTimer > 0f) // stunned: let the flung body travel freely
             {
                 _knockbackTimer -= Time.fixedDeltaTime;

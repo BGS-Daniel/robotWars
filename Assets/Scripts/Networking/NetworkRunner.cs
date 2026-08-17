@@ -49,7 +49,18 @@ namespace RobotWars.Networking
             nm.NetworkConfig.ConnectionApproval = true;
             nm.ConnectionApprovalCallback = OnConnectionApproval;
 
-            return nm.StartHost();
+            bool ok = nm.StartHost();
+            if (ok && LobbyManager.Instance != null &&
+                AuthenticationService.Instance != null &&
+                AuthenticationService.Instance.IsSignedIn)
+            {
+                // The host never runs OnConnectionApproval, so register its own
+                // clientId -> playerId mapping here (used to look up lobby colour).
+                LobbyManager.Instance.RegisterPlayerId(
+                    Unity.Netcode.NetworkManager.ServerClientId,
+                    AuthenticationService.Instance.PlayerId);
+            }
+            return ok;
         }
 
         public bool StartClient()

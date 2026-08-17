@@ -178,13 +178,102 @@ namespace RobotWars.Networking
         }
 
         private const string RelayCodeKey = "RelayJoinCode";
+        private const string ColorKey = "Color";
+        private const string ReadyKey = "Ready";
 
         private static Dictionary<string, PlayerDataObject> MakePlayerData()
         {
             return new Dictionary<string, PlayerDataObject>
             {
-                { "PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, LocalPlayer.Name) }
+                { "PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, LocalPlayer.Name) },
+                { ColorKey, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, LocalPlayer.ColorIndex.ToString()) },
+                { ReadyKey, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, LocalPlayer.Ready ? "1" : "0") }
             };
+        }
+
+        public string GetPlayerColor(string playerId)
+        {
+            return GetPlayerData(playerId, ColorKey, "0");
+        }
+
+        public string GetPlayerReady(string playerId)
+        {
+            return GetPlayerData(playerId, ReadyKey, "0");
+        }
+
+        private string GetPlayerData(string playerId, string key, string fallback)
+        {
+            if (_lobby == null) return fallback;
+            foreach (var p in _lobby.Players)
+            {
+                if (p.Id != playerId || p.Data == null) continue;
+                if (p.Data.TryGetValue(key, out var d) && !string.IsNullOrEmpty(d?.Value))
+                    return d.Value;
+            }
+            return fallback;
+        }
+
+        // Updates this player's entry in the local lobby cache and notifies the
+        // UI immediately, so changes show up without waiting for the sync loop.
+        private void PatchLocalData(string key, string value)
+        {
+            if (_lobby == null) return;
+            foreach (var p in _lobby.Players)
+            {
+                if (p.Id != AuthenticationService.Instance.PlayerId) continue;
+                if (p.Data == null) continue;
+                p.Data[key] = new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, value);
+                break;
+            }
+            LobbyUpdated?.Invoke(_lobby);
+        }
+
+        public async Task<bool> UpdateColorAsync(int index)
+        {
+            if (_lobby == null) return false;
+            LocalPlayer.ColorIndex = index;
+            try
+            {
+                await LobbyService.Instance.UpdatePlayerAsync(_lobby.Id, AuthenticationService.Instance.PlayerId,
+                    new UpdatePlayerOptions
+                    {
+                        Data = new Dictionary<string, PlayerDataObject>
+                        {
+                            { ColorKey, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, index.ToString()) }
+                        }
+                    });
+                PatchLocalData(ColorKey, index.ToString());
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[Lobby] color update: " + e.Message);
+                return false;
+            }
+        }
+
+        public async Task<bool> UpdateReadyAsync(bool ready)
+        {
+            if (_lobby == null) return false;
+            LocalPlayer.Ready = ready;
+            try
+            {
+                await LobbyService.Instance.UpdatePlayerAsync(_lobby.Id, AuthenticationService.Instance.PlayerId,
+                    new UpdatePlayerOptions
+                    {
+                        Data = new Dictionary<string, PlayerDataObject>
+                        {
+                            { ReadyKey, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, ready ? "1" : "0") }
+                        }
+                    });
+                PatchLocalData(ReadyKey, ready ? "1" : "0");
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[Lobby] ready update: " + e.Message);
+                return false;
+            }
         }
 
         private void StartSync()

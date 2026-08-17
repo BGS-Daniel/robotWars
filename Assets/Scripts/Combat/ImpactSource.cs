@@ -33,6 +33,10 @@ namespace RobotWars.Combat
         [Tooltip("Effective impact mass used by the combat system (independent of Rigidbody mass).")]
         public float impactMass = 1f;
 
+        [Header("Knockback Direction")]
+        [Tooltip("Fraction of knockback applied upward. 0 = pure horizontal, 1+ = launches the target up. Overrides the global CombatSettings value when > 0.")]
+        public float knockbackUpwardRatio = 0f;
+
         [Header("Machinery Power")]
         [Tooltip("Multiplier applied when the source is actively powered. Inactive/Disabled = 1.")]
         public float machineryPowerMultiplier = 1f;

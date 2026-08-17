@@ -15,11 +15,13 @@ namespace RobotWars.Networking
         public TextMeshProUGUI label;
         public Image hpFill;
         public Image gaugeFill;
+        public TextMeshProUGUI wins;
     }
 
     public class CombatHUD : MonoBehaviour
     {
         [SerializeField] private TextMeshProUGUI banner;
+        [SerializeField] private TextMeshProUGUI countdownText;
         [SerializeField] private PlayerSlot[] slots;
 
         [Header("Player Colors")]
@@ -38,12 +40,16 @@ namespace RobotWars.Networking
         [SerializeField] private Color gaugeMaxColor = new Color(0.9f, 0.15f, 0.12f, 1f);
 
         private readonly Dictionary<ulong, RoombaHealth> _bound = new Dictionary<ulong, RoombaHealth>();
+        private readonly Dictionary<ulong, System.Action> _unbinds = new Dictionary<ulong, System.Action>();
         private Coroutine _bannerRoutine;
+        private bool _matchBound;
 
         private void Start()
         {
             if (banner != null)
                 banner.gameObject.SetActive(false);
+            if (countdownText != null)
+                countdownText.gameObject.SetActive(false);
 
             for (int i = 0; i < slots.Length; i++)
             {
@@ -52,9 +58,86 @@ namespace RobotWars.Networking
             }
         }
 
+        private void OnDestroy()
+        {
+            foreach (var unbind in _unbinds.Values)
+                unbind?.Invoke();
+            _unbinds.Clear();
+
+            if (_matchBound && MatchManager.Instance != null)
+            {
+                var mm = MatchManager.Instance;
+                mm.CountdownChanged -= OnCountdownChanged;
+                mm.RoundStarted -= OnRoundStarted;
+                mm.RoundEnded -= OnRoundEnded;
+                mm.MatchEnded -= OnMatchEnded;
+            }
+        }
+
         private void Update()
         {
             SyncPlayers();
+            BindMatchManager();
+        }
+
+        private void BindMatchManager()
+        {
+            if (_matchBound) return;
+            var mm = MatchManager.Instance;
+            if (mm == null) return;
+
+            _matchBound = true;
+            mm.CountdownChanged += OnCountdownChanged;
+            mm.RoundStarted += () => OnRoundStarted();
+            mm.RoundEnded += OnRoundEnded;
+            mm.MatchEnded += OnMatchEnded;
+        }
+
+        private void OnCountdownChanged(int seconds)
+        {
+            if (countdownText == null) return;
+            if (seconds <= 0)
+            {
+                countdownText.gameObject.SetActive(false);
+                return;
+            }
+            countdownText.gameObject.SetActive(true);
+            countdownText.text = seconds.ToString();
+        }
+
+        private void OnRoundStarted()
+        {
+            if (countdownText != null)
+                countdownText.gameObject.SetActive(false);
+        }
+
+        private void OnRoundEnded(int winnerClientId)
+        {
+            // Wins are read live from MatchManager in RefreshWins.
+            RefreshAllWins();
+            string text = winnerClientId >= 0
+                ? "Player " + (winnerClientId + 1) + " wins the round!"
+                : "Round draw!";
+            ShowBanner(text, 3f);
+        }
+
+        private void OnMatchEnded(int championClientId)
+        {
+            ShowBanner("Player " + (championClientId + 1) + " is the Roomba King!", 5f);
+        }
+
+        private void RefreshAllWins()
+        {
+            var mm = MatchManager.Instance;
+            if (mm == null) return;
+            foreach (var clientId in _bound.Keys)
+            {
+                int slotIndex = (int)clientId;
+                if (slotIndex < 0 || slotIndex >= slots.Length) continue;
+                var slot = slots[slotIndex];
+                if (slot == null || slot.wins == null) continue;
+                slot.wins.text = mm.GetRoundWins(clientId) + "/" + mm.WinsToWin;
+            }
         }
 
         private void SyncPlayers()
@@ -87,19 +170,49 @@ namespace RobotWars.Networking
 
             slot.row.SetActive(true);
 
-            Color color = playerColors[slotIndex % playerColors.Length];
+            var tint = health.GetComponent<RoombaTint>();
+            Color color = tint != null ? tint.GetColor(tint.ColorIndex)
+                : playerColors[slotIndex % playerColors.Length];
             if (slot.label != null)
             {
                 slot.label.text = "Player " + (clientId + 1);
                 slot.label.color = color;
             }
 
+            var mm = MatchManager.Instance;
+            if (slot.wins != null)
+                slot.wins.text = mm != null ? mm.GetRoundWins(clientId) + "/" + mm.WinsToWin : "0/" + (mm != null ? mm.WinsToWin : 3);
+
             SetHp(slot, health.CurrentHP, health.MaxHP);
             SetGauge(slot, health.Gauge, health.GaugeMax);
 
-            health.HpChanged += (hp, max) => SetHp(slot, hp, max);
-            health.GaugeChanged += (gauge, max) => SetGauge(slot, gauge, max);
-            health.EliminatedClient += cause => ShowElimination(clientId, cause);
+            System.Action<float, float> onHp = null, onGauge = null;
+            System.Action<EliminationCause> onElim = null;
+            System.Action<int> onTint = null;
+            onHp = (hp, max) => SetHp(slot, hp, max);
+            onGauge = (gauge, max) => SetGauge(slot, gauge, max);
+            onElim = cause => ShowElimination(clientId, cause);
+            if (tint != null)
+                onTint = index =>
+                {
+                    if (slot.label != null)
+                        slot.label.color = tint.GetColor(index);
+                };
+
+            health.HpChanged += onHp;
+            health.GaugeChanged += onGauge;
+            health.EliminatedClient += onElim;
+            if (tint != null)
+                tint.ColorIndexChanged += onTint;
+
+            _unbinds[clientId] = () =>
+            {
+                health.HpChanged -= onHp;
+                health.GaugeChanged -= onGauge;
+                health.EliminatedClient -= onElim;
+                if (tint != null)
+                    tint.ColorIndexChanged -= onTint;
+            };
         }
 
         private void SetHp(PlayerSlot slot, float hp, float max)
@@ -122,18 +235,23 @@ namespace RobotWars.Networking
         private void ShowElimination(ulong clientId, EliminationCause cause)
         {
             string text = "Player " + (clientId + 1) + " Eliminated: " + CauseText(cause);
-            if (_bannerRoutine != null) StopCoroutine(_bannerRoutine);
-            _bannerRoutine = StartCoroutine(ShowBanner(text));
+            ShowBanner(text, 2f);
         }
 
-        private IEnumerator ShowBanner(string text)
+        private void ShowBanner(string text, float duration)
+        {
+            if (_bannerRoutine != null) StopCoroutine(_bannerRoutine);
+            _bannerRoutine = StartCoroutine(ShowBannerRoutine(text, duration));
+        }
+
+        private IEnumerator ShowBannerRoutine(string text, float duration)
         {
             if (banner != null)
             {
                 banner.gameObject.SetActive(true);
                 banner.text = text;
             }
-            yield return new WaitForSeconds(2f);
+            yield return new WaitForSeconds(duration);
             if (banner != null)
                 banner.gameObject.SetActive(false);
             _bannerRoutine = null;
