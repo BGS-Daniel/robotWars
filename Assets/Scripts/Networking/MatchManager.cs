@@ -110,12 +110,16 @@ namespace RobotWars.Networking
             _roundActive.Value = true;
 
             // Wait until one or zero players remain.
+            // Solo test mode: if only one player is connected, never end the
+            // round automatically — let the player drive around freely.
+            int totalPlayers = NetworkManager.Singleton != null
+                ? NetworkManager.Singleton.ConnectedClientsList.Count : 0;
             int alive;
             do
             {
                 yield return new WaitForSeconds(0.25f);
                 alive = ActiveRoombaCount();
-            } while (alive > 1);
+            } while (alive > 1 || totalPlayers <= 1);
 
             // Round over.
             _roundActive.Value = false;

@@ -123,6 +123,14 @@ namespace RobotWars.Combat
             Eliminated?.Invoke(cause);
 
             SpawnDebris();
+
+            var rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.isKinematic = true;
+            }
         }
 
         // Server-only: blow the Roomba apart into rigidbody debris that keeps
