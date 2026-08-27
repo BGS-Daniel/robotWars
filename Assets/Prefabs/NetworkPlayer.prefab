@@ -898,7 +898,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2526086174
+  GlobalObjectIdHash: 3010522101
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1028,12 +1028,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RobotWars.Networking.RobotDrive
   ShowTopMostFoldoutHeaderGroup: 1
-  maxSpeed: 10
-  acceleration: 40
+  maxSpeed: 20
+  acceleration: 20
   braking: 30
-  steerSpeed: 120
-  steerBoostAtSpeed: 1.5
-  driveSmoothing: 16
+  coastDrag: 4
+  turnSpeed: 180
+  turnSpeedAtMaxSpeed: 90
+  steerSmoothing: 6
+  lateralFriction: 24
+  driftLateralFriction: 12
   groundCheckRadius: 0.4
   groundCheckOffset: {x: 0, y: -0.5, z: 0}
 --- !u!114 &-4298257205893545767

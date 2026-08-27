@@ -6,13 +6,20 @@ namespace RobotWars.Networking
 {
     public class RobotDrive : NetworkBehaviour
     {
-        [Header("Drive")]
-        [SerializeField] private float maxSpeed = 10f;
-        [SerializeField] private float acceleration = 40f;
-        [SerializeField] private float braking = 30f;
-        [SerializeField] private float steerSpeed = 120f;
-        [SerializeField] private float steerBoostAtSpeed = 1.5f;
-        [SerializeField] private float driveSmoothing = 8f;
+        [Header("Speed")]
+        [SerializeField] private float maxSpeed = 12f;
+        [SerializeField] private float acceleration = 18f;
+        [SerializeField] private float braking = 22f;
+        [SerializeField] private float coastDrag = 4f;
+
+        [Header("Steering")]
+        [SerializeField] private float turnSpeed = 90f;
+        [SerializeField] private float turnSpeedAtMaxSpeed = 55f;
+        [SerializeField] private float steerSmoothing = 6f;
+
+        [Header("Drift")]
+        [SerializeField] private float lateralFriction = 8f;
+        [SerializeField] private float driftLateralFriction = 3f;
 
         [Header("Ground Check")]
         [SerializeField] private float groundCheckRadius = 0.4f;
@@ -113,30 +120,46 @@ namespace RobotWars.Networking
 
             if (!IsGrounded()) return;
 
-            float lerp = 1f - Mathf.Exp(-driveSmoothing * Time.fixedDeltaTime);
-            _smoothedThrottle = Mathf.Lerp(_smoothedThrottle, _throttle, lerp);
-            _smoothedSteer = Mathf.Lerp(_smoothedSteer, _steer, lerp);
+            float dt = Time.fixedDeltaTime;
 
-            float currentSpeed = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z).magnitude;
-
-            float targetSpeed = _smoothedThrottle * maxSpeed;
-
-            float accel = _smoothedThrottle > 0f ? acceleration : braking;
-            Vector3 desiredVelocity = transform.forward * targetSpeed;
+            float lerpFactor = 1f - Mathf.Exp(-steerSmoothing * dt);
+            _smoothedThrottle = Mathf.Lerp(_smoothedThrottle, _throttle, lerpFactor);
+            _smoothedSteer = Mathf.Lerp(_smoothedSteer, _steer, lerpFactor);
 
             Vector3 vel = _rb.linearVelocity;
-            Vector3 horizontalVel = Vector3.MoveTowards(
-                new Vector3(vel.x, 0f, vel.z),
-                new Vector3(desiredVelocity.x, 0f, desiredVelocity.z),
-                accel * Time.fixedDeltaTime);
-            vel.x = horizontalVel.x;
-            vel.z = horizontalVel.z;
+            Vector3 flatVel = new Vector3(vel.x, 0f, vel.z);
+            float currentSpeed = flatVel.magnitude;
+
+            Vector3 forward = transform.forward;
+            Vector3 right = transform.right;
+
+            float forwardSpeed = Vector3.Dot(flatVel, forward);
+            float lateralSpeed = Vector3.Dot(flatVel, right);
+
+            bool isDrifting = Mathf.Abs(_smoothedSteer) > 0.7f && currentSpeed > maxSpeed * 0.4f;
+            float latFriction = isDrifting ? driftLateralFriction : lateralFriction;
+            float newLateral = Mathf.MoveTowards(lateralSpeed, 0f, latFriction * dt);
+
+            float targetSpeed = _smoothedThrottle * maxSpeed;
+            float accel;
+            if (_smoothedThrottle > 0.01f)
+                accel = forwardSpeed < targetSpeed ? acceleration : braking;
+            else if (_smoothedThrottle < -0.01f)
+                accel = forwardSpeed > targetSpeed ? acceleration : braking;
+            else
+                accel = coastDrag;
+
+            float newForward = Mathf.MoveTowards(forwardSpeed, targetSpeed, accel * dt);
+
+            Vector3 newFlatVel = forward * newForward + right * newLateral;
+            vel.x = newFlatVel.x;
+            vel.z = newFlatVel.z;
             _rb.linearVelocity = vel;
 
-            float speedFactor = Mathf.InverseLerp(0f, maxSpeed * 0.5f, currentSpeed);
-            float effectiveSteerSpeed = steerSpeed * Mathf.Lerp(0.3f, steerBoostAtSpeed, speedFactor);
-            float yawDelta = _smoothedSteer * effectiveSteerSpeed * Time.fixedDeltaTime;
-            _rb.MoveRotation(_rb.rotation * Quaternion.Euler(0f, yawDelta, 0f));
+            float speedFactor = Mathf.InverseLerp(0f, maxSpeed, currentSpeed);
+            float effectiveTurnSpeed = Mathf.Lerp(turnSpeed, turnSpeedAtMaxSpeed, speedFactor);
+            float turnAmount = _smoothedSteer * effectiveTurnSpeed * dt;
+            _rb.MoveRotation(_rb.rotation * Quaternion.Euler(0f, turnAmount, 0f));
         }
     }
 }

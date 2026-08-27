@@ -678,8 +678,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotWars.Networking.ArenaCamera
   followHeight: 5
   followDistance: 10
-  followSmoothing: 8
+  mouseSensitivity: 0.15
+  stickSensitivity: 10
+  stickDeadzone: 0.15
+  pitchMin: -40
+  pitchMax: 40
+  catchUpSpeed: 20
   lookAtSmoothing: 10
+  respawnDelay: 1
+  collisionRadius: 0.3
+  collisionLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!114 &2500972250587709361
 MonoBehaviour:
   m_ObjectHideFlags: 0
